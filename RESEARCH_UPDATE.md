@@ -53,3 +53,34 @@ public gain does not support a claim of a substantial ranking improvement.
 
 All row-level predictions, fitted artifacts and receipts remain in the private
 local artifacts directory. The public release is unchanged.
+
+## 20 November: fire intensity and equal-site weighting
+
+Eighteen additional held-out evaluations completed: three fire-intensity
+variants and six site-weighted variants, each on both frozen assignments.
+No Kaggle submission was made in this batch.
+
+Variable positive-intensity ridge combined with the previous fire-detection
+classifier improved a fixed 25% blend to 0.882088 / 0.883716 overall.
+Its paired site-bootstrap improvement intervals included zero on both splits
+([-0.00294, 0.00389] and [-0.00036, 0.00612]); it is not upload-ready.
+
+Unbounded linear image models were unstable because some held-out measurements
+were far beyond training-fold variability. For example, a valid-data fraction
+had approximately 11,931 training-fold standard deviations in one CH4 fold.
+Clipping standardized predictors to [-5, 5] corrected that numerical
+extrapolation problem. This clipping uses only training-fitted scales and a
+fixed bound; it does not use validation labels or test data for preprocessing.
+
+A ridge model with inverse observed-site-count training weights and bounded
+table/image predictors improved the fixed 25% blend to **0.879563 / 0.879716**.
+However, paired site-bootstrap improvement intervals still included zero:
+[-0.00444, 0.01151] and [-0.00101, 0.01588]. This candidate is retained for
+further validation rather than submitted. All intervals are conditional on
+fitted predictions and exclude model-selection and future distribution-shift
+uncertainty. The original final submissions and released models remain intact.
+
+Reproduction: `python fire_intensity_search.py` and
+`python site_balance_search.py`. Scripts resume completed configurations from
+private local artifacts. Source parameters and aggregate results are recorded
+in the experiment ledger. No rank improvement is claimed from these tests.

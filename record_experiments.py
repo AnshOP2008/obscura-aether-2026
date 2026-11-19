@@ -64,6 +64,18 @@ if __name__=='__main__':
                 'scores':json.dumps({'standalone':r['score'],'fixed20pct_blend':r['blend_score']}),
                 'runtime_seconds':r['seconds'], 'artifacts':str(search.parent),
                 'decision':'reject full-target blend; selected target contributions evaluated separately'})
+    for family,hypothesis in [('fire_intensity_search','Variable positive fire intensity transfers across sites'),
+                              ('site_balance_search','Equal training weight per site improves new-site transfer')]:
+        search=Path('artifacts')/family/'results.json'
+        if not search.exists():continue
+        for r in json.loads(search.read_text()):
+            rows.append({'experiment_id':family+'_'+r['name'], 'hypothesis':hypothesis,
+                'features':'permitted table and hot-pixel summaries', 'model':r['name'],
+                'split':r['name'].split('_')[0]+' frozen five site folds', 'seed':20261120,
+                'hyperparameters':'see '+family.replace('_search','_search.py'),
+                'scores':json.dumps({'standalone':r['score'],'fixed25pct_blend':r['blend_score']}),
+                'runtime_seconds':r['seconds'], 'artifacts':str(search.parent),
+                'decision':'not submitted; improvement not established sufficiently for upload'})
     with Path('EXPERIMENTS.csv').open('w',newline='',encoding='utf-8') as f:
         w=csv.DictWriter(f,fieldnames=FIELDS);w.writeheader();w.writerows(rows)
     print('Recorded',len(rows),'completed experiments; incomplete runs excluded')
