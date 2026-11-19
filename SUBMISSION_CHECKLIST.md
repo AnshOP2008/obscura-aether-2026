@@ -14,8 +14,8 @@
 - [x] Video guide prepared; Devpost explicitly waives video; Kaggle wording conflict documented in RULES.md
 - [x] Kaggle final selections 58554926 and 58555559; browser confirmed 2/2
 - [x] Devpost submitted; confirmation banner independently observed
-- [ ] Associated Kaggle notebook public publication: phone verification required; user completing manually
-- [ ] Replace Devpost PDF with the hardware-neutral revision; user completing manually
+- [ ] Associated Kaggle notebook public publication: phone verification required; saved private notebook anshop2008/aether-obscura-final-source (version2,29 cells,zero outputs)
+- [x] Revised hardware-neutral PDF uploaded; Devpost reopened as SUBMITTED,5/5
 
 Public score1.08275, observed rank18 on2026-11-19. Private result unknown.
 Repository/release: https://github.com/AnshOP2008/obscura-aether-2026/releases/tag/v1.0-research-entry
