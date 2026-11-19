@@ -34,8 +34,8 @@ Accept https://www.kaggle.com/competitions/obscura/rules and obtain the official
 archive separately. Never redistribute tables, chips, identifiers, labels,
 feature caches, OOF rows or test predictions.
 
-The final training environment is Linux x86-64, Python 3.12 and CUDA 12.8 on a
-shared H100 MIG slice (10 GB). Use a separate environment:
+The final training environment is Linux x86-64, Python 3.12 and CUDA 12.8.
+Use a separate environment:
 
 ```sh
 python3.12 -m venv .venv
