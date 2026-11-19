@@ -10,7 +10,10 @@ if __name__=='__main__':
     for file in sorted(Path('artifacts').glob('*/result.json')):
         r=json.loads(file.read_text());name=file.parent.name
         if 'score' not in r or r.get('complete') is False:continue
-        if name.startswith('tabicl'):
+        if name.startswith('random_feature'):
+            hypothesis='Smooth nonlinear feature interactions complement the retained hybrid'
+            split='two frozen site assignments; exploratory target selection, fixed20% weight'
+        elif name.startswith('tabicl'):
             hypothesis='Synthetic-pretrained tabular foundation model adds complementary generalization'
             split='5 frozen site folds; observed labels only'
         elif name.startswith('hybrid'):
@@ -39,7 +42,8 @@ if __name__=='__main__':
             split='5 frozen site folds'
         score=r['score']['overall']
         decision='candidate; assess per-target stability and independent grouped split'
-        if name.startswith('tabicl'):decision='reject: .951329 grouped score does not improve retained candidates; no submission'
+        if name.startswith('random_feature'):decision='reserve: public1.08615 improves hybrid slightly but not best1.08275; existing final selections unchanged'
+        elif name.startswith('tabicl'):decision='reject: .951329 grouped score does not improve retained candidates; no submission'
         elif score>1.05:decision='reject: poor held-out generalization'
         elif name in ['mean_01','ridge_01','catboost_01','lightgbm_01']:decision='baseline reference'
         elif name.startswith(('hybrid','final_','cnn')):decision='keep: complementary final candidate; confirmed on both assignments'
@@ -49,6 +53,17 @@ if __name__=='__main__':
                      'hyperparameters':json.dumps(r.get('params',{'method':r.get('method','see source/config')})),
                      'scores':json.dumps(r['score']),'runtime_seconds':r.get('runtime_seconds',r.get('runtime_seconds_this_invocation','not recorded')),
                      'artifacts':str(file.parent),'decision':decision})
+    search=Path('artifacts/random_feature_search/results.json')
+    if search.exists():
+        for r in json.loads(search.read_text()):
+            rows.append({'experiment_id':'rff_'+r['name'],
+                'hypothesis':'Smooth nonlinear feature interactions add complementary signal',
+                'features':r['source'], 'model':'Random Fourier features + Ridge',
+                'split':r['split']+' frozen five site folds', 'seed':r['seed'],
+                'hyperparameters':json.dumps({k:r[k] for k in ['gamma_multiplier','alpha','components']}),
+                'scores':json.dumps({'standalone':r['score'],'fixed20pct_blend':r['blend_score']}),
+                'runtime_seconds':r['seconds'], 'artifacts':str(search.parent),
+                'decision':'reject full-target blend; selected target contributions evaluated separately'})
     with Path('EXPERIMENTS.csv').open('w',newline='',encoding='utf-8') as f:
         w=csv.DictWriter(f,fieldnames=FIELDS);w.writeheader();w.writerows(rows)
     print('Recorded',len(rows),'completed experiments; incomplete runs excluded')
