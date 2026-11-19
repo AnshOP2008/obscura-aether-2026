@@ -22,6 +22,8 @@ Record package versions, licenses, checkpoint provenance, and reused code before
 
 ## Additional research references
 
+- TabICLv2 (Qu et al., 2026): https://github.com/soda-inria/tabicl and https://arxiv.org/abs/2602.11139 . BSD-3-Clause code and checkpoint; synthetic pretraining. Evaluated with tabicl2.2.0, eight estimators, primary grouped MCRMSE0.951329. Rejected; not incorporated in either final submission. Checkpoint jingang/TabICL revision4dcd344ece2c00be9e831fdd35bed57b5ad83e19, tabicl-regressor-v2-20260212.ckpt, SHA2560db9cb538f114e79026bf08f45f41ad8dd7ad2de2aaca9a5ca8cd3bd9748ae7a. No fitted in-context data are distributed.
+
 - Grinsztajn et al., small tabular-data model comparisons: https://arxiv.org/abs/2207.08815 . Motivates strong-tree baselines, not a winning claim.
 - CatBoost missing values: https://catboost.ai/docs/en/concepts/algorithm-missing-values-processing .
 - Public participant notebook inspected: https://www.kaggle.com/code/avikdas567/multimodal-atmospheric-radiometry-plume-dynamics . No code or claimed results incorporated; license not independently established. Several summaries overlap our already implemented pixel and SWIR features. Our scores come from our own runs.

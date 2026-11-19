@@ -10,7 +10,10 @@ if __name__=='__main__':
     for file in sorted(Path('artifacts').glob('*/result.json')):
         r=json.loads(file.read_text());name=file.parent.name
         if 'score' not in r or r.get('complete') is False:continue
-        if name.startswith('hybrid'):
+        if name.startswith('tabicl'):
+            hypothesis='Synthetic-pretrained tabular foundation model adds complementary generalization'
+            split='5 frozen site folds; observed labels only'
+        elif name.startswith('hybrid'):
             hypothesis='Fixed75/25 nested/CNN errors complement across both site assignments'
             split='two independent 5-fold site assignments; each OOF row excludes its site'
         elif name.startswith('cnn'):
@@ -36,7 +39,8 @@ if __name__=='__main__':
             split='5 frozen site folds'
         score=r['score']['overall']
         decision='candidate; assess per-target stability and independent grouped split'
-        if score>1.05:decision='reject: poor held-out generalization'
+        if name.startswith('tabicl'):decision='reject: .951329 grouped score does not improve retained candidates; no submission'
+        elif score>1.05:decision='reject: poor held-out generalization'
         elif name in ['mean_01','ridge_01','catboost_01','lightgbm_01']:decision='baseline reference'
         elif name.startswith(('hybrid','final_','cnn')):decision='keep: complementary final candidate; confirmed on both assignments'
         features=r.get('features',r.get('feature_columns',[]))
