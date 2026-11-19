@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 import time
+import threading
 import warnings
 import zipfile
 import numpy as np
@@ -64,13 +65,19 @@ def main(args):
     rows=done.to_dict('records')
     started=time.monotonic()
     warnings.filterwarnings('ignore',category=NotGeoreferencedWarning)
+    local=threading.local()
+    handles=[]
+    handle_lock=threading.Lock()
     with zipfile.ZipFile(args.archive) as archive:
         names=archive.namelist()
         candidates=[n[:-len('train.csv')] for n in names if n.endswith('train.csv')]
         if len(candidates)!=1: raise ValueError('Ambiguous archive layout')
         prefix=candidates[0]
         def one(sid):
-            with MemoryFile(archive.read(prefix+'images/'+sid+'.tif')) as mem:
+            if not hasattr(local,'archive'):
+                local.archive=zipfile.ZipFile(args.archive)
+                with handle_lock:handles.append(local.archive)
+            with MemoryFile(local.archive.read(prefix+'images/'+sid+'.tif')) as mem:
                 with mem.open() as ds:
                     a=ds.read()
             return {'sample_id':sid,**summary(a)}
@@ -81,6 +88,7 @@ def main(args):
                 if i%100==0:
                     pd.DataFrame(rows).to_csv(output,index=False)
                     print(json.dumps({'completed':len(rows),'total':len(ids),'elapsed_seconds':round(time.monotonic()-started)}),flush=True)
+    for handle in handles:handle.close()
     frame=pd.DataFrame(rows).set_index('sample_id').loc[ids].reset_index()
     frame.to_csv(output,index=False)
     print(json.dumps({'complete':True,'rows':len(frame),'predictors':len(frame.columns)-1}),flush=True)

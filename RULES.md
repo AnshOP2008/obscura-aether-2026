@@ -6,6 +6,7 @@ Sources inspected 2026-11-19:
 - https://obscura.devpost.com/resources
 
 ## Requirements
+- Organizer prize update: private MCRMSE must be <= 0.80 for cash-prize eligibility, even for top-ranked entries. If nobody meets it, no cash prizes are awarded. Official host announcement read 2026-11-19: https://www.kaggle.com/competitions/obscura/discussion/753176 . Do not imply that a public rank alone earns a prize.
 - Eligible enrolled college/university students; age and platform eligibility apply. Do not invent attestations.
 - One Kaggle account, one team, matching participants across platforms.
 - Deadline displayed on Kaggle and Devpost: November 24, 2026, 20:30 IST.
@@ -23,4 +24,6 @@ Sources inspected 2026-11-19:
 ## Conflicts and unresolved details
 - Team maximum: Kaggle 5, Devpost 20. Use stricter 5 if relevant.
 - Video: Kaggle requires it in several clauses; Devpost explicitly states no video. Do not silently assume the waiver supersedes Kaggle.
-- README, exact feature definitions, dataset license, evaluation implementation, live upload allowance, and starter notebook still pending inspection.
+- README, channel definitions, supplied z-score metric, and starter notebook now inspected. Dataset license displayed CC BY-NC-SA 4.0, additionally subject to competition non-redistribution rules.
+- CLI displayed 20/day effective allowance (19 remaining after first upload, 18 after second), conflicting with written “five (10)”; retain conservative five/day cap.
+- Latest organizer Devpost opening announcement https://www.kaggle.com/competitions/obscura/discussion/760203 confirms November 24 end date; no video clarification provided.

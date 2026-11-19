@@ -5,15 +5,14 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from pipeline import features, validate_submission, TARGETS
+from pipeline import attach_images, features, validate_submission, TARGETS
 
 
 def predict(run, test):
     run = Path(run)
     info = json.loads((run / 'result.json').read_text(encoding='utf-8'))
     x = features(test, info['engineered'])
-    if list(x) != info['features']:
-        raise ValueError('Feature order mismatch')
+    x = x[info['features']]
     result = np.zeros((len(test), 5))
     for j, target in enumerate(TARGETS):
         models = sorted(run.glob(f'*_{target}.joblib'))
@@ -30,8 +29,9 @@ if __name__ == '__main__':
     p.add_argument('--test', required=True)
     p.add_argument('--template', required=True)
     p.add_argument('--output', required=True)
+    p.add_argument('--image-features')
     args = p.parse_args()
-    test = pd.read_csv(args.test, dtype={'sample_id': str})
+    test = attach_images(pd.read_csv(args.test, dtype={'sample_id': str}), args.image_features)
     template = pd.read_csv(args.template, dtype={'sample_id': str})
     pred = pd.DataFrame(predict(args.run, test), columns=TARGETS)
     pred['sample_id'] = test.sample_id

@@ -1,92 +1,117 @@
 # Aether - OBSCURA atmospheric regression
 
-Reproducible prediction of five atmospheric z-score targets from the official
-OBSCURA inputs. Research is in progress; no private-leaderboard result is known.
+Reproducible prediction of five supplied z-score targets, with site-held-out
+validation and masked labels. No private score or final ranking is known.
 
-## Data access
+## Results
 
-Join the official competition and accept its rules before downloading data:
-https://www.kaggle.com/competitions/obscura . Competition files must remain private.
-This repository does not redistribute tables, chips, identifiers, or targets.
+Lower masked mean column-wise RMSE is better. It averages the five separately
+masked target RMSEs; it does not pool observed cells.
 
-Use Python 3.12 and install `requirements.txt`. Authenticate with `kaggle auth login`.
-Download using `kaggle competitions download -c obscura -p data`.
-The archive contains train.csv, test.csv, sample_submission.csv and image chips.
-The current working copy uses `train.csv` and `testnew.csv` (the official test.csv).
+| Method | Primary grouped OOF | Secondary grouped OOF |
+|---|---:|---:|
+| Training-fold mean | 1.004654 | - |
+| Tabular ridge | 0.943131 | - |
+| Tabular CatBoost | 0.952982 | - |
+| Tabular LightGBM | 0.982933 | - |
+| Nested tabular calibration | 0.912548 | 0.919404 |
+| Nested image/tabular | 0.890592 | 0.896503 |
+| Compact spatial/tabular CNN | 0.902282 | 0.911014 |
+| Fixed 75/25 hybrid | **0.882626** | **0.886535** |
 
-## Training and inference
+Averaging the two site-held-out OOF predictions scores 0.882445. Each row's site
+is excluded from both models predicting it. Deployment averages ten models per
+component, so this summary is not an exact unbiased estimate of ten-model
+inference. Model families were selected during repeated research.
 
-Run `python -m unittest test_pipeline` for metric and submission contracts.
+Public Kaggle scores: ridge 1.24413 (58552717), nested tabular 1.15981 (58553016),
+nested image/tabular 1.08275 (58554926). The validation/public gap remains a
+material limitation; these results do not establish private ranking.
 
-Baseline examples:
+## Data and environment
 
-```powershell
-python pipeline.py --train train.csv --model mean --run mean_01
-python pipeline.py --train train.csv --model ridge --run ridge_01
-python pipeline.py --train train.csv --model catboost --run catboost_01
-python pipeline.py --train train.csv --model lightgbm --run lightgbm_01
+Accept https://www.kaggle.com/competitions/obscura/rules and obtain the official
+archive separately. Never redistribute tables, chips, identifiers, labels,
+feature caches, OOF rows or test predictions.
+
+The final training environment is Linux x86-64, Python 3.12 and CUDA 12.8 on a
+shared H100 MIG slice (10 GB). Use a separate environment:
+
+```sh
+python3.12 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements-server.txt --extra-index-url https://download.pytorch.org/whl/cu128
+python -m unittest test_pipeline
 ```
 
-Run IDs must be new to protect completed experiments. Frozen fold assignments
-are saved in `artifacts/folds.csv`. Every row from a training site stays in one
-fold; identifiers are excluded from predictors. Missing labels are excluded
-separately for each target and are never imputed.
+`requirements-server.txt` pins final core dependencies. The earlier local
+baseline environment is in `requirements-baselines.txt`. Saved sklearn objects
+require the final versions; older local versions produced small discrepancies.
+Load only trusted model files. CPU inference works; CNN training requires CUDA.
 
-```powershell
-python nested_blend.py --output artifacts/nested_blend_01
-python infer_nested.py --run artifacts/nested_blend_01 --test testnew.csv --template data/sample_submission.csv --output artifacts/nested_blend_01/submission.csv
+The optional Kaggle CLI avoids browser download dialogs:
+
+```sh
+python -m pip install kaggle
+kaggle auth login
+kaggle competitions download -c obscura -p data
 ```
 
-The nested procedure uses five outer site folds and three inner site folds.
-It fits nonnegative, target-specific ridge/CatBoost blend weights with sum at
-most one; the remaining mass is on the fixed zero z-score reference. Weights
-are trained solely on inner out-of-fold predictions. Outer validation labels
-never enter preprocessing, base fitting, or blend fitting. Final inference
-averages the five saved outer models and their training-only blend weights.
+Place the archive at `data/obscura.zip`. Our unchanged official test.csv is named
+`testnew.csv`. The table preparer refuses to overwrite different existing data.
 
-Pixel summaries can be computed without extracting image directories:
+## Full reproduction
 
-```powershell
-python image_features.py --archive data/obscura.zip --train train.csv --test testnew.csv --output artifacts/image_features.csv --workers 8
+Run from the repository root:
+
+```sh
+python reproduce.py features --archive data/obscura.zip
+python reproduce.py train
+python reproduce.py infer
 ```
 
-This reads all 14 channels in the documented order, uses SCL and cloud
-probability to define a clear-pixel mask, and records reflectance summaries,
-center contrasts, SWIR tails, and local edges. All-cloud regions remain missing.
-The image branch has not yet been evaluated and is not part of the submitted
-tabular baseline.
+The feature stage prepares tables, 123 clear-pixel summaries, 23 SWIR-tail
+summaries, 2,048 frozen SeCo-Eco features and sixteen-channel 96x96 tensors.
+`embeddings.py` downloads the pinned MIT checkpoint if absent and verifies its
+full SHA256. All 4,439 chips were processed; every archive entry passed CRC.
+Allow several GB for caches beyond the 8.35 GB archive. All-cloud statistics
+remain missing and are handled with fold-local imputers.
 
-## Verified interim results
+Both site assignments are recreated exactly with seeds 20261119 and 20261120.
+Every learned transformation stays inside training folds. `final_ensemble.py`
+uses five outer / three inner site folds, target-specific nonnegative calibration
+with sum at most one, and remaining weight on the zero reference.
+`small_multimodal.py` selects epochs on inner sites, resets and refits the outer
+training partition. Completed folds resume; do not mix source/configuration
+changes with an existing training run.
 
-Lower masked mean column-wise RMSE is better. Each score averages five
-target-specific RMSEs over observed labels; it is not pooled cell RMSE.
+Inference reloads all four saved runs, applies fixed nested/CNN weights .75/.25,
+bounds only FIRMS below at its no-detection floor (-.439), then averages the two
+assignments. The exact IDs, schema, order, uniqueness and finite values are
+checked before saving `artifacts/hybrid_10fold/submission.csv` (1,221 rows).
 
-| Method | Primary site-grouped OOF MCRMSE |
-|---|---:|
-| Training-fold mean | 1.004654 |
-| Ridge | 0.943131 |
-| CatBoost | 0.952982 |
-| LightGBM | 0.982933 |
-| Nested calibrated ridge/CatBoost | 0.912548 |
+A permitted model bundle, when attached to the repository release, restores
+`artifacts/final_primary`, `final_secondary`, `cnn_primary` and `cnn_secondary`
+when extracted into the repository root. Rebuild features, then run inference;
+training can be skipped. The bundle excludes restricted data and predictions.
 
-The nested method scored 0.919404 on a second grouped fold assignment.
-Primary nested per-target RMSEs: methane 1.002189, NO2 0.941650,
-CO 0.988152, aerosol 0.627213, fire 1.003537.
+## Research and limitations
 
-Public Kaggle scores: ridge 1.24413 (submission 58552717); nested ensemble
-1.15981 (58553016). These public scores do not establish private performance.
-Public test facilities and time periods differ from training, and the private
-test is later still. The considerable validation/public gap remains a limitation.
+`EXPERIMENTS.csv` contains completed experiments. Private run directories retain
+OOF predictions, configurations and model hashes. `build_report.py` builds the
+research PDF using ReportLab, installed separately. `RULES.md`, `SOURCES.md` and
+`SUBMISSION_CHECKLIST.md` record requirements, provenance and completion evidence.
 
-## Research record and sources
+Site grouping cannot reproduce all undisclosed future-time shifts. Sparse
+methane labels and selection across many model families limit confidence.
+The targets are coarse satellite quantities, not facility emission rates.
+No location/date recovery, sample matching, external corresponding data,
+identifier/ordering exploit or hidden-label probing is used.
 
-See STATUS.md, RULES.md, EXPERIMENTS.csv, SOURCES.md and
-SUBMISSION_CHECKLIST.md. Models, predictions, data and private connection
-configuration are excluded from Git. Do not publish notebook outputs or
-reconstructable data derivatives.
+## Attribution
 
-Official starter methodology reference:
-https://www.kaggle.com/code/zelza0/obscura-starter-baseline .
-Contains modified Copernicus Sentinel data; source measurements include
-Sentinel-2/5P, NASA FIRMS, ECMWF ERA5-Land and Copernicus DEM, accessed by
-the competition organizers through Google Earth Engine.
+Our source code is MIT-licensed. SeCo-Eco weights retain their MIT attribution;
+exact provenance is in SOURCES.md. The official starter informed baseline
+comparisons. Contains modified Copernicus Sentinel data and information from
+NASA FIRMS, ECMWF ERA5-Land and Copernicus DEM supplied by organizers via Earth
+Engine. AI assistance supported research, implementation and documentation.
